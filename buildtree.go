@@ -7,17 +7,14 @@ import (
 	"path/filepath"
 )
 
-func BuildTree(path string) (*FileSystem, error) {
+func BuildTree(path string) (*Node, error) {
 	var err error
 	var root *Node
 	if root, err = visitNode(path); err != nil {
 		return nil, err
 	}
 
-	return &FileSystem{
-		Path: path,
-		Root: root,
-	}, nil
+	return root, nil
 }
 
 func visitNode(path string) (*Node, error) {
