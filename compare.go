@@ -16,8 +16,8 @@ func compareNode(original, changed *Node) *Diff {
 
 	rootDiff.DiffType = DiffTypeChanged
 
-	// search for changes to original children
 	if original.IsDirectory && changed.IsDirectory {
+		// search for changes to original children
 		for _, origChild := range original.Children {
 			changeChild, ok := searchChildrenForPath(changed, origChild.Path)
 
@@ -25,6 +25,7 @@ func compareNode(original, changed *Node) *Diff {
 			if !ok {
 				rootDiff.Children = append(rootDiff.Children, &Diff{
 					Path:     origChild.Path,
+					DiffType: DiffTypeRemoved,
 					Children: []*Diff{},
 				})
 				continue
@@ -33,9 +34,34 @@ func compareNode(original, changed *Node) *Diff {
 			// compare the two nodes
 			rootDiff.Children = append(rootDiff.Children, compareNode(origChild, changeChild))
 		}
+
+		// search for additions to children
+		for _, changeChild := range changed.Children {
+			_, ok := searchChildrenForPath(original, changeChild.Path)
+
+			// child not found in changed tree
+			if !ok {
+				rootDiff.Children = append(rootDiff.Children, addAll(changeChild))
+				continue
+			}
+		}
 	}
 
 	return &rootDiff
+}
+
+func addAll(rootNode *Node) *Diff {
+	child := &Diff{
+		Path:     rootNode.Path,
+		DiffType: DiffTypeAdded,
+		Children: []*Diff{},
+	}
+
+	for _, ch := range rootNode.Children {
+		child.Children = append(child.Children, addAll(ch))
+	}
+
+	return child
 }
 
 func searchChildrenForPath(parent *Node, path string) (*Node, bool) {
