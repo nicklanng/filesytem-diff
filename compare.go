@@ -23,11 +23,7 @@ func compareNode(original, changed *Node) *Diff {
 
 			// child not found in changed tree
 			if !ok {
-				rootDiff.Children = append(rootDiff.Children, &Diff{
-					Path:     origChild.Path,
-					DiffType: DiffTypeRemoved,
-					Children: []*Diff{},
-				})
+				rootDiff.Children = append(rootDiff.Children, markAll(origChild, DiffTypeRemoved))
 				continue
 			}
 
@@ -41,7 +37,7 @@ func compareNode(original, changed *Node) *Diff {
 
 			// child not found in changed tree
 			if !ok {
-				rootDiff.Children = append(rootDiff.Children, addAll(changeChild))
+				rootDiff.Children = append(rootDiff.Children, markAll(changeChild, DiffTypeAdded))
 				continue
 			}
 		}
@@ -50,15 +46,15 @@ func compareNode(original, changed *Node) *Diff {
 	return &rootDiff
 }
 
-func addAll(rootNode *Node) *Diff {
+func markAll(rootNode *Node, diff DiffType) *Diff {
 	child := &Diff{
 		Path:     rootNode.Path,
-		DiffType: DiffTypeAdded,
+		DiffType: diff,
 		Children: []*Diff{},
 	}
 
 	for _, ch := range rootNode.Children {
-		child.Children = append(child.Children, addAll(ch))
+		child.Children = append(child.Children, markAll(ch, diff))
 	}
 
 	return child

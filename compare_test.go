@@ -199,3 +199,87 @@ func TestCompare_FolderAdded(t *testing.T) {
 		t.Error("Change should show that newfile was added")
 	}
 }
+
+func TestCompare_FolderRemoved(t *testing.T) {
+	original := &fsdiff.Node{
+		Path:        "/etc/data",
+		Hash:        [20]byte{3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3},
+		IsDirectory: true,
+		Children: []*fsdiff.Node{
+			&fsdiff.Node{
+				Path: "/etc/data/a.txt",
+				Hash: [20]byte{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2},
+			},
+			&fsdiff.Node{
+				Path:        "/etc/data/newfolder",
+				Hash:        [20]byte{4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4},
+				IsDirectory: true,
+				Children: []*fsdiff.Node{
+					&fsdiff.Node{
+						Path: "/etc/data/newfolder/newfile",
+						Hash: [20]byte{5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5},
+					},
+				},
+			},
+		},
+	}
+
+	changed := &fsdiff.Node{
+		Path:        "/etc/data",
+		Hash:        [20]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+		IsDirectory: true,
+		Children: []*fsdiff.Node{
+			&fsdiff.Node{
+				Path: "/etc/data/a.txt",
+				Hash: [20]byte{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2},
+			},
+		},
+	}
+
+	rootDiff := fsdiff.Compare(original, changed)
+
+	if rootDiff.Path != "/etc/data" {
+		t.Error("Top level node has changed")
+	}
+
+	if rootDiff.DiffType != fsdiff.DiffTypeChanged {
+		t.Error("Top level directory has changed")
+	}
+
+	if len(rootDiff.Children) != 2 {
+		t.Error("Should be two children")
+		return
+	}
+
+	childDiff := rootDiff.Children[0]
+	if childDiff.Path != "/etc/data/a.txt" {
+		t.Error("Incorrect path in the diff")
+	}
+
+	if childDiff.DiffType != fsdiff.DiffTypeNone {
+		t.Error("Change should show that a.txt did not change")
+	}
+
+	childDiff = rootDiff.Children[1]
+	if childDiff.Path != "/etc/data/newfolder" {
+		t.Error("Incorrect path in the diff")
+	}
+
+	if childDiff.DiffType != fsdiff.DiffTypeRemoved {
+		t.Error("Folder should be shown as removed")
+	}
+
+	if len(childDiff.Children) != 1 {
+		t.Error("Should be one child")
+		return
+	}
+
+	childDiff = childDiff.Children[0]
+	if childDiff.Path != "/etc/data/newfolder/newfile" {
+		t.Error("Incorrect path in the diff")
+	}
+
+	if childDiff.DiffType != fsdiff.DiffTypeRemoved {
+		t.Error("Change should show that newfile was removed")
+	}
+}
